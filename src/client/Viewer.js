@@ -19,12 +19,19 @@ define(function(rqr) {
         }
 
         this.stage = stage;
+        this.cache = {};
     };
 
-    Viewer.prototype.addObject = function(){
+    Viewer.prototype.updateObject = function(obj){
+        var o = this.cache["obj_"+obj.id];
+        o.position.x = obj.x;
+        o.position.y = obj.y;
+    }
+
+    Viewer.prototype.addObject = function(obj){
 
         // create a texture from an image path
-        var texture = PIXI.Texture.fromImage("bunny.png");
+        var texture = PIXI.Texture.fromImage(obj.texture);
         // create a new Sprite using the texture
         var bunny = new PIXI.Sprite(texture);
 
@@ -33,10 +40,11 @@ define(function(rqr) {
         bunny.anchor.y = 0.5;
 
         // move the sprite t the center of the screen
-        bunny.position.x = Math.random()*400;
-        bunny.position.y = Math.random()*300;
+        bunny.position.x = obj.x;
+        bunny.position.y = obj.y;
 
         this.stage.addChild(bunny);
+        this.cache["obj_"+obj.id] = bunny;
     };
 
     return Viewer;

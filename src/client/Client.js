@@ -7,8 +7,12 @@ define(function(rqr) {
 
     Client.prototype.processData = function(data){
         console.log("processing data: " + data)
-        if(data == "bunny"){
-            this.viewer.addObject();
+        var msg = JSON.parse(data);
+        if(msg.type == "addObject"){
+            this.viewer.addObject(msg.content);
+        }
+        if(msg.type == "updateObject"){
+            this.viewer.updateObject(msg.content);
         }
     };
 
