@@ -1,0 +1,24 @@
+<polymer-element name="vw-world" attributes="name">
+    <template>
+        {{name}}
+    </template>
+    <script>
+        Polymer('vw-world', {
+            name: "",
+            ready: function() {
+                rqr.config({
+                    baseUrl: 'src'
+                });
+
+                window.VirtualWorld = {
+                    loaded: false,
+                    onload: null
+                };
+
+                rqrjs(["server/Server"], function(Server) {
+                    var server = new Server(this.name);
+                });
+            }
+        });
+    </script>
+</polymer-element>
