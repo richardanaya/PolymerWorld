@@ -1,50 +1,83 @@
-define(function(rqr) {
-    var Viewer = function(screenDom){
-        // create an new instance of a pixi stage
-        var stage = new PIXI.Stage(0x66FF99);
+define(function (rqr) {
 
-        // create a renderer instance
-        var renderer = PIXI.autoDetectRenderer(400, 300, screenDom);
+    var currentScene = null;
+    var objectCache = {};
 
-        requestAnimFrame( animate );
+    var Viewer = function (screenDom) {
+    };
 
+    Viewer.prototype.gameCreated = function (game) {
+        var camera, scene, renderer;
+        var geometry, material, mesh;
+
+        var stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.left = '0px';
+        stats.domElement.style.top = '0px';
+
+        init();
+        animate();
+
+
+        document.body.appendChild(stats.domElement);
+
+        function init() {
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.position.z = 1000;
+
+            renderer = new THREE.CanvasRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            document.body.appendChild(renderer.domElement);
+
+        }
 
 
         function animate() {
-
-            requestAnimFrame( animate );
-
-            // render the stage
-            renderer.render(stage);
+            // note: three.js includes requestAnimationFrame shim
+            requestAnimationFrame(animate);
+            if (currentScene) {
+                renderer.render(currentScene, camera);
+            }
+            stats.update();
         }
-
-        this.stage = stage;
-        this.cache = {};
     };
 
-    Viewer.prototype.updateObject = function(obj){
-        var o = this.cache["obj_"+obj.id];
-        o.position.x = obj.x;
-        o.position.y = obj.y;
-    }
+    Viewer.prototype.objectChange = function (content) {
+        var name = content.name;
+        var value = content.value;
+        var id = content.id;
+        var cobj = objectCache["OBJ_" + id];
+        if ( name == "position") {
+            cobj.position.x = value.x;
+            cobj.position.y = value.y;
+            cobj.position.z = value.z;
+        }
+        if ( name == "rotation") {
+            cobj.rotation.x = value.x;
+            cobj.rotation.y = value.y;
+            cobj.rotation.z = value.z;
+        }
+    };
 
-    Viewer.prototype.addObject = function(obj){
+    Viewer.prototype.objectLoading = function (content) {
+        geometry = new THREE.CubeGeometry(200, 200, 200);
+        material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
 
-        // create a texture from an image path
-        var texture = PIXI.Texture.fromImage(obj.texture);
-        // create a new Sprite using the texture
-        var bunny = new PIXI.Sprite(texture);
+        mesh = new THREE.Mesh(geometry, material);
+        currentScene.add(mesh);
+        objectCache["OBJ_" + content.id] = mesh;
+        mesh.position.x = content.position.x;
+        mesh.position.y = content.position.y;
+        mesh.position.z = content.position.z;
+        mesh.rotation.x = content.rotation.x;
+        mesh.rotation.y = content.rotation.y;
+        mesh.rotation.z = content.rotation.z;
+    };
 
-        // center the sprites anchor point
-        bunny.anchor.x = 0.5;
-        bunny.anchor.y = 0.5;
-
-        // move the sprite t the center of the screen
-        bunny.position.x = obj.x;
-        bunny.position.y = obj.y;
-
-        this.stage.addChild(bunny);
-        this.cache["obj_"+obj.id] = bunny;
+    Viewer.prototype.sceneLoading = function (scene) {
+        currentScene = new THREE.Scene();
     };
 
     return Viewer;

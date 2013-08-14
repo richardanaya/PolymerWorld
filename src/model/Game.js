@@ -5,8 +5,8 @@ define(function(rqr) {
     };
 
     Game.prototype.init = function(){
-        this.loadScene(this.scenes[0]);
         this.emitter.trigger("gameCreated",this);
+        this.loadScene(this.scenes[0]);
     };
 
     Game.prototype.loadScene = function(scene){
