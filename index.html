@@ -1,0 +1,149 @@
+<html>
+<head>
+    <script src="lib/three.js"></script>
+    <script src="lib/lucid.js"></script>
+    <script src="lib/timer.js"></script>
+    <script src="lib/guid.js"></script>
+    <script src="lib/stats.js"></script>
+    <script src="lib/require.js"></script>
+
+
+</head>
+<body>
+
+</body>
+<script>
+    rqr.config({
+        baseUrl: 'src'
+    });
+
+    rqrjs([
+        "model/Game",
+        "model/Scene",
+        "model/Actor",
+        "model/FSM",
+        "model/State",
+        "model/StateTransition",
+        "model/Time",
+        "model/action/Debug",
+        "model/action/Rotate",
+        "model/action/Move",
+        "model/action/Transition"
+        ], function(Game,Scene,Actor,FSM,State,StateTransition,Time,Debug,Rotate,Move,Transition) {
+        var currentScene = null;
+        var objectCache = {};
+
+        var gameCreated = function(game){
+            var camera, scene, renderer;
+            var geometry, material, mesh;
+
+            var stats = new Stats();
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+
+            Time.start();
+            init();
+            animate();
+
+
+            document.body.appendChild(stats.domElement);
+
+            function init() {
+
+                camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+                camera.position.z = 1000;
+
+                renderer = new THREE.CanvasRenderer();
+                renderer.setSize( window.innerWidth, window.innerHeight );
+
+                document.body.appendChild( renderer.domElement );
+
+            }
+
+
+            function animate() {
+                Time.tick();
+                game.run();
+                // note: three.js includes requestAnimationFrame shim
+                requestAnimationFrame( animate );
+                if(currentScene){
+                    renderer.render( currentScene, camera );
+                }
+                stats.update();
+            }
+        };
+
+        var onObjectChange = function(obj,property,value,oldValue){
+            var cobj = objectCache["OBJ_"+obj.id];
+            if(property == "position"){
+                console.log(value);
+                cobj.position.x = value.x;
+                cobj.position.y = value.y;
+                cobj.position.z = value.z;
+            }
+            if(property == "rotation"){
+                cobj.rotation.x = value.x;
+                cobj.rotation.y = value.y;
+                cobj.rotation.z = value.z;
+            }
+        };
+
+        var objectLoading = function(obj){
+            geometry = new THREE.CubeGeometry( 200, 200, 200 );
+            material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+
+            mesh = new THREE.Mesh( geometry, material );
+            currentScene.add( mesh );
+            objectCache["OBJ_"+obj.id] = mesh;
+            mesh.position.x = obj.position.x;
+            mesh.position.y = obj.position.y;
+            mesh.position.z = obj.position.z;
+            mesh.rotation.x = obj.rotation.x;
+            mesh.rotation.y = obj.rotation.y;
+            mesh.rotation.z = obj.rotation.z;
+            obj.emitter.on("change",onObjectChange)
+        };
+
+        var sceneLoading = function(scene){
+            currentScene = new THREE.Scene();
+            scene.emitter.on("objectLoading",objectLoading)
+        };
+
+        var game = new Game();
+        var s = new Scene();
+        var a = new Actor();
+        a.setPosition({x:0,y:100,z:0})
+
+        var fsm = new FSM();
+
+        var stateA = new State();
+
+        stateA.addAction(new Debug({message: "state A"}));
+        stateA.addAction(new Rotate({rotation:{x:1,y:1,z:0}}));
+        stateA.addAction(new Move({distance:{x:0,y:100,z:0}}));
+        stateA.addAction(new Transition({time:1, name:"switch"}));
+        fsm.addState(stateA);
+
+        var stateB = new State();
+        stateB.addAction(new Debug({message: "state B"}));
+        stateB.addAction(new Rotate({rotation:{x:-1,y:-1,z:0}}));
+        stateB.addAction(new Move({distance:{x:0,y:-100,z:0}}));
+        stateB.addAction(new Transition({time:1, name:"switch"}));
+        fsm.addState(stateB);
+
+        fsm.addTransition( new StateTransition("switch",stateA,stateB));
+        fsm.addTransition( new StateTransition("switch",stateB,stateA));
+
+        a.addComponent(fsm);
+        s.addActor(a);
+        a = new Actor();
+        a.setPosition({x:0,y:-100,z:0})
+        s.addActor(a);
+        game.addScene(s);
+        game.emitter.on("gameCreated", gameCreated);
+        game.emitter.on("sceneLoading",sceneLoading)
+        game.init();
+    });
+</script>
+</html>
